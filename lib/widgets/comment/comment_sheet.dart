@@ -29,12 +29,20 @@ class CommentSheet {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) {
+          
+          void onTextChanged() {
+            if (context.mounted) setSheetState(() {});
+          }
+          controller.removeListener(onTextChanged);
+          controller.addListener(onTextChanged);
 
           void cancelEdit() {
             setSheetState(() {
               editingCommentId = null;
               controller.clear();
+              selectedImage = null;
             });
+            FocusScope.of(context).unfocus(); 
           }
 
           Future<void> handleDelete(String id) async {
@@ -43,11 +51,8 @@ class CommentSheet {
             try {
               setSheetState(() => isSubmitting = true);
               await BlogService.deleteRecord('comments', id);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Deleted")));
-              }
             } finally {
-              setSheetState(() => isSubmitting = false);
+              if (context.mounted) setSheetState(() => isSubmitting = false);
             }
           }
 
@@ -79,32 +84,37 @@ class CommentSheet {
                 setSheetState(() => selectedImage = null);
               }
             } finally {
-              setSheetState(() => isSubmitting = false);
+              if (context.mounted) setSheetState(() => isSubmitting = false);
             }
           }
 
           return Container(
+            height: MediaQuery.of(context).size.height * 0.85,
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-            child: DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: 0.85,
-              builder: (_, scrollController) => Column(
-                children: [
-                  if (isSubmitting) const LinearProgressIndicator(),
-                  _buildHeader(editingCommentId != null),
-                  Expanded(
-                    child: _buildCommentList(postId, scrollController, editingCommentId, (comm) {
+            child: Column(
+              children: [
+                if (isSubmitting) const LinearProgressIndicator(),
+                _buildHeader(editingCommentId != null),
+                Expanded(
+                  child: _buildCommentList(
+                    postId, 
+                    ScrollController(), 
+                    editingCommentId, 
+                    (comm) {
                       setSheetState(() {
                         editingCommentId = comm['id'].toString();
                         controller.text = comm['content'] ?? "";
                       });
-                    }, handleDelete),
+                    }, 
+                    handleDelete
                   ),
-                  CommentInputBar(
+                ),
+                Padding(
+                  padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                  child: CommentInputBar(
                     controller: controller,
                     selectedImage: selectedImage,
                     isSubmitting: isSubmitting,
@@ -113,8 +123,8 @@ class CommentSheet {
                     onSend: handleSend,
                     onCancel: cancelEdit,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
@@ -140,31 +150,39 @@ class CommentSheet {
           .eq('blog_id', postId)
           .order('created_at'),
       builder: (context, snapshot) {
-        if (snapshot.hasError) return Center(child: Text("Error loading comments"));
+        if (snapshot.hasError) return const Center(child: Text("Error loading comments"));
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
         
         final comments = snapshot.data!;
-        if (comments.isEmpty) return const Center(child: Text("Be the first to comment!"));
-
-        return ListView.builder(
-          controller: scroll,
-          itemCount: comments.length,
-          itemBuilder: (context, index) {
-            final comm = comments[index];
-            final String commentId = comm['id'].toString();
-            return CommentItem(
-              comm: comm,
-              isOwner: comm['user_id'] == AuthService().currentUserId,
-              isEditing: editingId == commentId,
-              onEdit: (selectedComment) {
-                onEdit(selectedComment); 
-              },
-              onDelete: (id) {
-                onDelete(id.toString());
-              },
-              formatTime: _formatTimeAgo,
-            );
+        
+        return RefreshIndicator(
+          onRefresh: () async {
+            await Future.delayed(const Duration(seconds: 1));
           },
+          child: comments.isEmpty 
+            ? ListView( 
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 100),
+                  Center(child: Text("Be the first to comment!")),
+                ],
+              )
+            : ListView.builder(
+                controller: scroll,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: comments.length,
+                itemBuilder: (context, index) {
+                  final comm = comments[index];
+                  return CommentItem(
+                    comm: comm,
+                    isOwner: comm['user_id'] == AuthService().currentUserId,
+                    isEditing: editingId == comm['id'].toString(),
+                    onEdit: onEdit,
+                    onDelete: onDelete,
+                    formatTime: _formatTimeAgo,
+                  );
+                },
+              ),
         );
       },
     );

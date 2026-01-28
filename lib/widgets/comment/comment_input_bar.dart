@@ -119,6 +119,7 @@ class CommentInputBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: TextField(
+                      autofocus: true,
                       controller: controller,
                       enabled: !isSubmitting,
                       maxLines: null, 
