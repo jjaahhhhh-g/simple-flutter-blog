@@ -12,8 +12,8 @@ void main() async {
   await dotenv.load(fileName: ".env");
 
   await Supabase.initialize(
-    url: dotenv.env['Supabase_Url']!,
-    anonKey: dotenv.env['Supabase_APIKey']!,
+    url: 'https://fhxaudbohynxqtbzuilv.supabase.co',
+    anonKey: 'sb_publishable_R9SzoRP8geM5_5t9HLMhbQ_0o4mfjm_',
   );
 
   runApp(const MyApp());
