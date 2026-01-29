@@ -45,30 +45,38 @@ class BlogService {
   }
 
   static Future<void> submitComment({
+    String? id, 
     required String blogId,
     required String text,
     Uint8List? webImage,
   }) async {
     final user = _supabase.auth.currentUser;
-    String? imageUrl;
+    String? uploadedUrl;
 
     if (webImage != null) {
       final path = 'comments/${user!.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      
       await _supabase.storage.from('comments').uploadBinary(
             path,
             webImage,
             fileOptions: const FileOptions(contentType: 'image/jpeg'),
           );
-          
-      imageUrl = _supabase.storage.from('comments').getPublicUrl(path);
+      uploadedUrl = _supabase.storage.from('comments').getPublicUrl(path);
     }
 
-    await _supabase.from('comments').insert({
+    final data = {
       'blog_id': blogId,
       'user_id': user!.id,
       'content': text.trim(),
-      'image_url': imageUrl,
-    });
+    };
+
+    if (uploadedUrl != null) {
+      data['image_url'] = uploadedUrl;
+    }
+
+    if (id == null) {
+      await _supabase.from('comments').insert(data);
+    } else {
+      await _supabase.from('comments').update(data).eq('id', id);
+    }
   }
 }

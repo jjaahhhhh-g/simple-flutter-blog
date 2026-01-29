@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -14,7 +14,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   final _picker = ImagePicker();
-  File? _avatarFile;
+  
+  Uint8List? _avatarBytes;
   String? _avatarUrl; 
   bool _isLoading = false;
 
@@ -49,29 +50,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery, 
+      imageQuality: 50
+    );
+    
     if (picked != null) {
-      setState(() => _avatarFile = File(picked.path));
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _avatarBytes = bytes;
+      });
     }
   }
 
   Future<String?> _uploadAvatar() async {
-    if (_avatarFile == null) return _avatarUrl; 
+    if (_avatarBytes == null) return _avatarUrl; 
 
-    final fileExtension = _avatarUrl!.split(".").last;
-    final fileName = '$_userId-avatar-${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
+    final fileName = '$_userId-avatar-${DateTime.now().millisecondsSinceEpoch}.jpg';
     
-    await Supabase.instance.client.storage.from('profiles').upload(
+    await Supabase.instance.client.storage.from('profiles').uploadBinary(
           fileName,
-          _avatarFile!,
-          fileOptions: const FileOptions(upsert: true),
+          _avatarBytes!,
+          fileOptions: const FileOptions(
+            upsert: true,
+            contentType: 'image/jpeg',
+          ),
         );
 
     return Supabase.instance.client.storage.from('profiles').getPublicUrl(fileName);
   }
 
   Future<void> _saveProfile() async {
-    if (_nameController.text.isEmpty) {
+    if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter your display name")),
       );
@@ -126,10 +136,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.blue[100],
-                    backgroundImage: _avatarFile != null
-                        ? FileImage(_avatarFile!)
+                    backgroundImage: _avatarBytes != null
+                        ? MemoryImage(_avatarBytes!)
                         : (_avatarUrl != null ? NetworkImage(_avatarUrl!) : null) as ImageProvider?,
-                    child: (_avatarFile == null && _avatarUrl == null)
+                    child: (_avatarBytes == null && _avatarUrl == null)
                         ? const Icon(Icons.person, size: 50, color: Colors.blue)
                         : null,
                   ),
@@ -163,7 +173,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _saveProfile,
                 child: _isLoading
-                    ? const CircularProgressIndicator()
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
                     : const Text("Save and Continue"),
               ),
             ),

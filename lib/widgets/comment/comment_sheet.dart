@@ -57,30 +57,49 @@ class CommentSheet {
             }
           }
 
-          Future<void> handleSend() async {
-            if (controller.text.trim().isEmpty && selectedWebImage == null) return;
+          // Future<void> handleSend() async {
+          //   if (controller.text.trim().isEmpty && selectedWebImage == null) return;
             
-            setSheetState(() => isSubmitting = true);
-            try {
-              if (editingCommentId != null) {
-                await Supabase.instance.client.from('comments')
-                    .update({'content': controller.text.trim()})
-                    .eq('id', editingCommentId!);
-                cancelEdit();
-              } else {
-                await BlogService.submitComment(
-                  blogId: postId,
-                  text: controller.text,
-                  webImage: selectedWebImage, 
-                );
-                
-                controller.clear();
-                setSheetState(() => selectedWebImage = null);
-              }
-            } finally {
-              if (context.mounted) setSheetState(() => isSubmitting = false);
+          //   setSheetState(() => isSubmitting = true);
+          //   try {
+          //     await BlogService.submitComment(
+          //       id: editingCommentId, 
+          //       blogId: postId,
+          //       text: controller.text,
+          //       webImage: selectedWebImage, 
+          //     );
+              
+          //     cancelEdit(); 
+          //   } catch (e) {
+          //     if (context.mounted) {
+          //       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+          //     }
+          //   } finally {
+          //     if (context.mounted) setSheetState(() => isSubmitting = false);
+          //   }
+          // }
+
+          Future<void> handleSend() async {
+          if (controller.text.trim().isEmpty && selectedWebImage == null) return;
+          
+          setSheetState(() => isSubmitting = true);
+          try {
+            await BlogService.submitComment(
+              id: editingCommentId, 
+              blogId: postId,
+              text: controller.text,
+              webImage: selectedWebImage, 
+            );
+            
+            cancelEdit(); 
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
             }
+          } finally {
+            if (context.mounted) setSheetState(() => isSubmitting = false);
           }
+        }
 
           return Container(
             height: MediaQuery.of(context).size.height * 0.85,
@@ -102,6 +121,7 @@ class CommentSheet {
                       setSheetState(() {
                         editingCommentId = comm['id'].toString();
                         controller.text = comm['content'] ?? "";
+                        selectedWebImage = null;
                       });
                     }, 
                     handleDelete
@@ -137,9 +157,19 @@ class CommentSheet {
   static Widget _buildHeader(bool isEditing) {
     return Padding(
       padding: const EdgeInsets.all(15),
-      child: Text(
-        isEditing ? "Editing Comment..." : "Comments",
-        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            isEditing ? "Editing Comment..." : "Comments",
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16),
+          ),
+          if (isEditing)
+            const Text(
+              "(Image won't be replaced unless changed)",
+              style: TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+        ],
       ),
     );
   }

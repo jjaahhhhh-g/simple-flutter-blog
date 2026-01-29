@@ -55,7 +55,7 @@ class CommentInputBar extends StatelessWidget {
               top: -5,
               right: -5,
               child: GestureDetector(
-                onTap: () => onImagePick(null),
+                onTap: () => onImagePick(null), 
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Colors.red,
@@ -96,14 +96,13 @@ class CommentInputBar extends StatelessWidget {
             if (selectedImage != null) _buildImagePreview(),
             Row(
               children: [
-                if (!isEditing)
-                  IconButton(
-                    icon: Icon(
-                      Icons.image_outlined,
-                      color: isSubmitting ? Colors.grey : Colors.blue,
-                    ),
-                    onPressed: isSubmitting ? null : _pickImage,
+                IconButton(
+                  icon: Icon(
+                    isEditing ? Icons.add_photo_alternate : Icons.image_outlined,
+                    color: isSubmitting ? Colors.grey : (isEditing ? Colors.orange : Colors.blue),
                   ),
+                  onPressed: isSubmitting ? null : _pickImage,
+                ),
                 
                 if (isEditing)
                   IconButton(
