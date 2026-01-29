@@ -57,28 +57,6 @@ class CommentSheet {
             }
           }
 
-          // Future<void> handleSend() async {
-          //   if (controller.text.trim().isEmpty && selectedWebImage == null) return;
-            
-          //   setSheetState(() => isSubmitting = true);
-          //   try {
-          //     await BlogService.submitComment(
-          //       id: editingCommentId, 
-          //       blogId: postId,
-          //       text: controller.text,
-          //       webImage: selectedWebImage, 
-          //     );
-              
-          //     cancelEdit(); 
-          //   } catch (e) {
-          //     if (context.mounted) {
-          //       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
-          //     }
-          //   } finally {
-          //     if (context.mounted) setSheetState(() => isSubmitting = false);
-          //   }
-          // }
-
           Future<void> handleSend() async {
           if (controller.text.trim().isEmpty && selectedWebImage == null) return;
           

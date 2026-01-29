@@ -99,9 +99,9 @@ class CommentInputBar extends StatelessWidget {
                 IconButton(
                   icon: Icon(
                     isEditing ? Icons.add_photo_alternate : Icons.image_outlined,
-                    color: isSubmitting ? Colors.grey : (isEditing ? Colors.orange : Colors.blue),
+                    color: isSubmitting ? Colors.grey : Colors.blue,
                   ),
-                  onPressed: isSubmitting ? null : _pickImage,
+                  onPressed: isSubmitting ? null : _pickImage, 
                 ),
                 
                 if (isEditing)

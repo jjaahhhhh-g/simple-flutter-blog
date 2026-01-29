@@ -54,7 +54,7 @@ class BlogService {
     String? uploadedUrl;
 
     if (webImage != null) {
-      final path = 'comments/${user!.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final path = '${user!.id}/comment-images/${DateTime.now().millisecondsSinceEpoch}.jpg';
       await _supabase.storage.from('comments').uploadBinary(
             path,
             webImage,
@@ -63,9 +63,7 @@ class BlogService {
       uploadedUrl = _supabase.storage.from('comments').getPublicUrl(path);
     }
 
-    final data = {
-      'blog_id': blogId,
-      'user_id': user!.id,
+    final Map<String, dynamic> data = {
       'content': text.trim(),
     };
 
@@ -74,6 +72,8 @@ class BlogService {
     }
 
     if (id == null) {
+      data['blog_id'] = blogId;
+      data['user_id'] = user!.id;
       await _supabase.from('comments').insert(data);
     } else {
       await _supabase.from('comments').update(data).eq('id', id);
