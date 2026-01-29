@@ -1,13 +1,13 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CommentInputBar extends StatelessWidget {
   final TextEditingController controller;
-  final File? selectedImage;
+  final Uint8List? selectedImage; 
   final bool isSubmitting;
   final bool isEditing;
-  final Function(File?) onImagePick;
+  final Function(XFile?) onImagePick; 
   final VoidCallback onSend;
   final VoidCallback onCancel;
 
@@ -31,7 +31,7 @@ class CommentInputBar extends StatelessWidget {
     );
 
     if (image != null) {
-      onImagePick(File(image.path));
+      onImagePick(image);
     }
   }
 
@@ -44,7 +44,7 @@ class CommentInputBar extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.file(
+              child: Image.memory(
                 selectedImage!,
                 height: 80,
                 width: 80,

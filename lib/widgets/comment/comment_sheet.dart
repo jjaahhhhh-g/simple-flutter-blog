@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:blogs/widgets/comment/comment_input_bar.dart';
 import 'package:blogs/widgets/comment/comment_item.dart';
 import 'package:flutter/material.dart';
@@ -19,9 +19,10 @@ class CommentSheet {
 
   static void show(BuildContext context, String postId) {
     final controller = TextEditingController();
-    File? selectedImage;
+    Uint8List? selectedWebImage; 
     String? editingCommentId;
     bool isSubmitting = false;
+    Key streamKey = UniqueKey();
 
     showModalBottomSheet(
       context: context,
@@ -40,7 +41,7 @@ class CommentSheet {
             setSheetState(() {
               editingCommentId = null;
               controller.clear();
-              selectedImage = null;
+              selectedWebImage = null;
             });
             FocusScope.of(context).unfocus(); 
           }
@@ -57,7 +58,7 @@ class CommentSheet {
           }
 
           Future<void> handleSend() async {
-            if (controller.text.trim().isEmpty && selectedImage == null) return;
+            if (controller.text.trim().isEmpty && selectedWebImage == null) return;
             
             setSheetState(() => isSubmitting = true);
             try {
@@ -67,21 +68,14 @@ class CommentSheet {
                     .eq('id', editingCommentId!);
                 cancelEdit();
               } else {
-                String? uploadedUrl;
-                if (selectedImage != null) {
-                  final userId = AuthService().currentUserId;
-                  final path = '$userId/comment-images/${DateTime.now().millisecondsSinceEpoch}';
-                  await Supabase.instance.client.storage.from('comments').upload(path, selectedImage!);
-                  uploadedUrl = Supabase.instance.client.storage.from('comments').getPublicUrl(path);
-                }
-                await Supabase.instance.client.from('comments').insert({
-                  'blog_id': postId,
-                  'user_id': AuthService().currentUserId,
-                  'content': controller.text.trim(),
-                  'image_url': uploadedUrl,
-                });
+                await BlogService.submitComment(
+                  blogId: postId,
+                  text: controller.text,
+                  webImage: selectedWebImage, 
+                );
+                
                 controller.clear();
-                setSheetState(() => selectedImage = null);
+                setSheetState(() => selectedWebImage = null);
               }
             } finally {
               if (context.mounted) setSheetState(() => isSubmitting = false);
@@ -103,6 +97,7 @@ class CommentSheet {
                     postId, 
                     ScrollController(), 
                     editingCommentId, 
+                    streamKey, 
                     (comm) {
                       setSheetState(() {
                         editingCommentId = comm['id'].toString();
@@ -116,10 +111,17 @@ class CommentSheet {
                   padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
                   child: CommentInputBar(
                     controller: controller,
-                    selectedImage: selectedImage,
+                    selectedImage: selectedWebImage,
                     isSubmitting: isSubmitting,
                     isEditing: editingCommentId != null,
-                    onImagePick: (file) => setSheetState(() => selectedImage = file),
+                    onImagePick: (file) async {
+                      if (file == null) {
+                        setSheetState(() => selectedWebImage = null);
+                        return;
+                      }
+                      final bytes = await file.readAsBytes();
+                      setSheetState(() => selectedWebImage = bytes);
+                    },
                     onSend: handleSend,
                     onCancel: cancelEdit,
                   ),
@@ -142,8 +144,9 @@ class CommentSheet {
     );
   }
 
-  static Widget _buildCommentList(String postId, ScrollController scroll, String? editingId, Function(Map<String, dynamic>) onEdit, Function(String) onDelete) {
+  static Widget _buildCommentList(String postId, ScrollController scroll, String? editingId, Key key, Function(Map<String, dynamic>) onEdit, Function(String) onDelete) {
     return StreamBuilder<List<Map<String, dynamic>>>(
+      key: key, 
       stream: Supabase.instance.client
           .from('comment_with_profile')
           .stream(primaryKey: ['id'])

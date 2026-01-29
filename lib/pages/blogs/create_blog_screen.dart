@@ -1,12 +1,12 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:blogs/services/blog_services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/app_scaffold.dart';
 
 class CreateBlogScreen extends StatefulWidget {
-  final Map<String, dynamic>? postData; 
-  const CreateBlogScreen({super.key, this.postData}); 
+  final Map<String, dynamic>? postData;
+  const CreateBlogScreen({super.key, this.postData});
 
   @override
   State<CreateBlogScreen> createState() => _CreateBlogScreenState();
@@ -16,7 +16,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   bool _isLoading = false;
-  File? _imageFile;
+  Uint8List? _webImage; 
   String? _existingImageUrl;
 
   @override
@@ -32,8 +32,9 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
   Future<void> _pickImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
       setState(() {
-        _imageFile = File(pickedFile.path);
+        _webImage = bytes;
       });
     }
   }
@@ -48,10 +49,10 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
 
     try {
       await BlogService.saveBlog(
-        id: widget.postData?['id'], 
+        id: widget.postData?['id'],
         title: _titleController.text,
         content: _contentController.text,
-        imageFile: _imageFile,
+        webImage: _webImage, 
         existingImageUrl: _existingImageUrl,
       );
 
@@ -71,7 +72,7 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
   @override
   Widget build(BuildContext context) {
     String screenTitle = widget.postData == null ? "Create New Post" : "Edit Post";
-    
+
     return AppScaffold(
       title: screenTitle,
       child: Padding(
@@ -86,13 +87,13 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(8),
-                  image: _imageFile != null
-                      ? DecorationImage(image: FileImage(_imageFile!), fit: BoxFit.cover)
-                      : (_existingImageUrl != null 
+                  image: _webImage != null
+                      ? DecorationImage(image: MemoryImage(_webImage!), fit: BoxFit.cover)
+                      : (_existingImageUrl != null
                           ? DecorationImage(image: NetworkImage(_existingImageUrl!), fit: BoxFit.cover)
                           : null),
                 ),
-                child: (_imageFile == null && _existingImageUrl == null)
+                child: (_webImage == null && _existingImageUrl == null)
                     ? const Center(child: Icon(Icons.add_a_photo, size: 50, color: Colors.grey))
                     : null,
               ),
@@ -118,7 +119,9 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
               height: 50,
               child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _handleSave,
-                icon: _isLoading ? const CircularProgressIndicator() : const Icon(Icons.save),
+                icon: _isLoading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.save),
                 label: Text(widget.postData == null ? "Publish Blog" : "Save Changes"),
               ),
             ),

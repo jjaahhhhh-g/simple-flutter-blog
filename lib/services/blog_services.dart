@@ -1,22 +1,28 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BlogService {
   static final _supabase = Supabase.instance.client;
 
   static Future<void> saveBlog({
-    String? id, 
+    String? id,
     required String title,
     required String content,
-    File? imageFile,
+    Uint8List? webImage, 
     String? existingImageUrl,
   }) async {
     final user = _supabase.auth.currentUser;
     String? finalImageUrl = existingImageUrl;
 
-    if (imageFile != null) {
-      final fileName = '${user!.id}/${DateTime.now().millisecondsSinceEpoch}';
-      await _supabase.storage.from('blogs').upload(fileName, imageFile);
+    if (webImage != null) {
+      final fileName = '${user!.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      
+      await _supabase.storage.from('blogs').uploadBinary(
+            fileName,
+            webImage,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          );
+          
       finalImageUrl = _supabase.storage.from('blogs').getPublicUrl(fileName);
     }
 
@@ -41,14 +47,20 @@ class BlogService {
   static Future<void> submitComment({
     required String blogId,
     required String text,
-    File? imageFile,
+    Uint8List? webImage,
   }) async {
     final user = _supabase.auth.currentUser;
     String? imageUrl;
 
-    if (imageFile != null) {
-      final path = 'comments/${user!.id}/${DateTime.now().millisecondsSinceEpoch}';
-      await _supabase.storage.from('comments').upload(path, imageFile);
+    if (webImage != null) {
+      final path = 'comments/${user!.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      
+      await _supabase.storage.from('comments').uploadBinary(
+            path,
+            webImage,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          );
+          
       imageUrl = _supabase.storage.from('comments').getPublicUrl(path);
     }
 
