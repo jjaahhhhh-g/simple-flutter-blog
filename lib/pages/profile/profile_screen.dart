@@ -66,7 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<String?> _uploadAvatar() async {
     if (_avatarBytes == null) return _avatarUrl; 
 
-    final fileName = '$_userId-avatar-${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final fileName = '$_userId/avatar/profile_avatar.jpg';
     
     await Supabase.instance.client.storage.from('profiles').uploadBinary(
           fileName,

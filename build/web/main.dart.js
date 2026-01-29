@@ -44121,19 +44121,17 @@ case 4:return A.t(null,r)}})
 return A.u($async$uC,r)},
 A2(){var s=0,r=A.v(t.T),q,p=this,o,n,m,l
 var $async$A2=A.q(function(a,b){if(a===1)return A.r(b,r)
-for(;;)switch(s){case 0:if(p.f==null){q=p.r
+for(;;)switch(s){case 0:l=p.f
+if(l==null){q=p.r
 s=1
-break}o=p.x+"-avatar-"+Date.now()+".jpg"
+break}o=p.x+"/avatar/profile_avatar.jpg"
 n=$.dx()
 m=n.b
 m===$&&A.a()
 m=m.at
 m===$&&A.a()
-m=m.h2("profiles")
-l=p.f
-l.toString
 s=3
-return A.m(m.tb(o,l,B.GJ),$async$A2)
+return A.m(m.h2("profiles").tb(o,l,B.GJ),$async$A2)
 case 3:n=n.b.at
 n===$&&A.a()
 q=n.h2("profiles").DI(o)
